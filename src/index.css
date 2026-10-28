@@ -151,3 +151,12 @@ code {
   background: var(--accent-bg);
   border-color: var(--accent-border);
 }
+
+.instrument select {
+  font: inherit;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-h);
+  background: var(--bg);
+}

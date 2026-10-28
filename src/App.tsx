@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { pianoLoaded, playNote, stopNote } from './audio/piano'
+import { INSTRUMENTS, type InstrumentId } from './audio/instruments'
+import { playNote, selectInstrument, stopNote } from './audio/piano'
 import { Keyboard } from './components/Keyboard'
 import { detectChords } from './music/chords'
 import { useMidiInput, type MidiStatus } from './midi/useMidiInput'
@@ -7,11 +8,18 @@ import { noteName, type MidiNote } from './music/notes'
 
 function App() {
   const [activeNotes, setActiveNotes] = useState<ReadonlySet<MidiNote>>(new Set())
-  const [loaded, setLoaded] = useState(false)
+  const [instrument, setInstrument] = useState<InstrumentId>('piano')
+  // Último instrumento que terminó de descargarse (o que falló).
+  const [loadedInstrument, setLoadedInstrument] = useState<InstrumentId>()
+  const [failedInstrument, setFailedInstrument] = useState<InstrumentId>()
+  const loaded = loadedInstrument === instrument
 
   useEffect(() => {
-    pianoLoaded.then(() => setLoaded(true))
-  }, [])
+    selectInstrument(instrument).then(
+      () => setLoadedInstrument(instrument),
+      () => setFailedInstrument(instrument),
+    )
+  }, [instrument])
 
   // Notas que ya soltaste pero siguen sonando porque el pedal está pisado.
   // Los refs son para la lógica (siempre al día entre eventos MIDI seguidos);
@@ -65,11 +73,29 @@ function App() {
   return (
     <main>
       <h1>MyPiano</h1>
+      <label className="instrument">
+        Instrumento{' '}
+        <select value={instrument} onChange={(e) => setInstrument(e.target.value as InstrumentId)}>
+          {Object.entries(INSTRUMENTS).map(([id, { label }]) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
       <p className="midi-status">
         {midiStatusText(midi)}
         <span className={`pedal${pedal ? ' down' : ''}`}>Pedal</span>
       </p>
-      <p>{loaded ? (playing.length ? playing.map(noteName).join(' · ') : '—') : 'Cargando sonido…'}</p>
+      <p>
+        {failedInstrument === instrument && !loaded
+          ? 'No se pudo descargar el sonido. Revisa tu conexión a internet.'
+          : loaded
+            ? playing.length
+              ? playing.map(noteName).join(' · ')
+              : '—'
+            : 'Cargando sonido…'}
+      </p>
       <div className="chord">
         {chord && (
           <>
