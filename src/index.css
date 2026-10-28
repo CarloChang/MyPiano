@@ -109,3 +109,28 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Acorde detectado. Altura fija para que el teclado no salte al tocar. */
+.chord {
+  min-height: 7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.chord-symbol {
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.chord-name {
+  color: var(--text-h);
+}
+
+.chord-alternatives {
+  font-size: 0.85rem;
+}
