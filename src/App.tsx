@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { pianoLoaded, playNote, stopNote } from './audio/piano'
 import { Keyboard } from './components/Keyboard'
+import { useMidiInput, type MidiStatus } from './midi/useMidiInput'
 import { noteName, type MidiNote } from './music/notes'
 
 function App() {
@@ -11,8 +12,8 @@ function App() {
     pianoLoaded.then(() => setLoaded(true))
   }, [])
 
-  const noteOn = (midi: MidiNote) => {
-    playNote(midi)
+  const noteOn = (midi: MidiNote, velocity?: number) => {
+    playNote(midi, velocity)
     setActiveNotes((prev) => (prev.has(midi) ? prev : new Set(prev).add(midi)))
   }
 
@@ -26,15 +27,33 @@ function App() {
     })
   }
 
+  const midi = useMidiInput(noteOn, noteOff)
+
   const playing = [...activeNotes].sort((a, b) => a - b)
 
   return (
     <main>
       <h1>MyPiano</h1>
+      <p className="midi-status">{midiStatusText(midi)}</p>
       <p>{loaded ? (playing.length ? playing.map(noteName).join(' · ') : '—') : 'Cargando sonido…'}</p>
       <Keyboard from={21} to={108} activeNotes={activeNotes} onNoteOn={noteOn} onNoteOff={noteOff} />
     </main>
   )
+}
+
+function midiStatusText(status: MidiStatus): string {
+  switch (status.kind) {
+    case 'unsupported':
+      return 'Este navegador no admite MIDI. Usa Chrome o Edge para conectar tu piano.'
+    case 'denied':
+      return 'No se dio permiso para usar MIDI. Actívalo en la configuración del sitio.'
+    case 'pending':
+      return 'Buscando teclados MIDI…'
+    case 'ready':
+      return status.inputs.length
+        ? `Piano conectado: ${status.inputs.join(', ')}`
+        : 'Conecta tu piano por USB para tocar con él.'
+  }
 }
 
 export default App
