@@ -1,0 +1,42 @@
+.keyboard {
+  position: relative;
+  display: flex;
+  height: 180px;
+  user-select: none;
+  touch-action: none; /* evita que el navegador haga scroll al tocar las teclas */
+}
+
+.key {
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.key.white {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  background: #fff;
+  border: 1px solid #333;
+  border-radius: 0 0 6px 6px;
+}
+
+.key.black {
+  position: absolute;
+  top: 0;
+  height: 60%;
+  transform: translateX(-50%);
+  background: #222;
+  border-radius: 0 0 4px 4px;
+  z-index: 1;
+}
+
+.key.white.active { background: #8ecae6; }
+.key.black.active { background: #219ebc; }
+
+.label {
+  font-size: 11px;
+  color: #666;
+  pointer-events: none;
+}
