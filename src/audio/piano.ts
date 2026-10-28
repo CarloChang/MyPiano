@@ -16,6 +16,8 @@ function sampleUrls(): Record<string, string> {
   return urls
 }
 
+Tone.setContext(new Tone.Context({ latencyHint: 'interactive', lookAhead: 0 }))
+
 const sampler = new Tone.Sampler({
   urls: sampleUrls(),
   baseUrl: BASE_URL,
@@ -31,10 +33,10 @@ export function playNote(midi: MidiNote, velocity = 0.8): void {
   // página; Tone.start() lo activa y no hace nada si ya está activo.
   void Tone.start()
   if (!sampler.loaded) return
-  sampler.triggerAttack(noteName(midi), Tone.now(), velocity)
+  sampler.triggerAttack(noteName(midi), Tone.immediate(), velocity)
 }
 
 export function stopNote(midi: MidiNote): void {
   if (!sampler.loaded) return
-  sampler.triggerRelease(noteName(midi), Tone.now())
+  sampler.triggerRelease(noteName(midi), Tone.immediate())
 }
