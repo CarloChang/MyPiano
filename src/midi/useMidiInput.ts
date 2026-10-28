@@ -9,6 +9,8 @@ export type MidiStatus =
 
 const NOTE_OFF = 0x80
 const NOTE_ON = 0x90
+const CONTROL_CHANGE = 0xb0
+const SUSTAIN_PEDAL = 64 // número de controlador estándar del pedal derecho
 
 /**
  * Escucha todos los teclados MIDI conectados (USB o Bluetooth) y avisa de cada
@@ -17,6 +19,7 @@ const NOTE_ON = 0x90
 export function useMidiInput(
   onNoteOn: (midi: MidiNote, velocity: number) => void,
   onNoteOff: (midi: MidiNote) => void,
+  onSustain: (down: boolean) => void,
 ): MidiStatus {
   const [status, setStatus] = useState<MidiStatus>(() =>
     'requestMIDIAccess' in navigator ? { kind: 'pending' } : { kind: 'unsupported' },
@@ -24,9 +27,9 @@ export function useMidiInput(
 
   // Las funciones de App cambian en cada render; guardamos siempre la última
   // para no tener que volver a conectar el MIDI cada vez.
-  const handlers = useRef({ onNoteOn, onNoteOff })
+  const handlers = useRef({ onNoteOn, onNoteOff, onSustain })
   useEffect(() => {
-    handlers.current = { onNoteOn, onNoteOff }
+    handlers.current = { onNoteOn, onNoteOff, onSustain }
   })
 
   useEffect(() => {
@@ -41,6 +44,9 @@ export function useMidiInput(
       // Muchos teclados mandan "note on" con velocidad 0 en vez de "note off".
       if (command === NOTE_ON && velocity > 0) handlers.current.onNoteOn(note, velocity / 127)
       else if (command === NOTE_OFF || command === NOTE_ON) handlers.current.onNoteOff(note)
+      // Algunos pedales mandan valores intermedios (medio pedal); a partir de
+      // la mitad lo consideramos pisado.
+      else if (command === CONTROL_CHANGE && note === SUSTAIN_PEDAL) handlers.current.onSustain(velocity >= 64)
     }
 
     // Se llama al empezar y cada vez que conectas o desconectas un teclado.

@@ -134,3 +134,20 @@ code {
 .chord-alternatives {
   font-size: 0.85rem;
 }
+
+/* Indicador del pedal de sustain: apagado hasta que lo pisas. */
+.pedal {
+  margin-left: 0.75rem;
+  padding: 0.1rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+  opacity: 0.5;
+}
+
+.pedal.down {
+  opacity: 1;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}

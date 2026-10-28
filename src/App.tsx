@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { pianoLoaded, playNote, stopNote } from './audio/piano'
 import { Keyboard } from './components/Keyboard'
 import { detectChords } from './music/chords'
@@ -13,13 +13,29 @@ function App() {
     pianoLoaded.then(() => setLoaded(true))
   }, [])
 
+  // Notas que ya soltaste pero siguen sonando porque el pedal está pisado.
+  // Los refs son para la lógica (siempre al día entre eventos MIDI seguidos);
+  // los estados, para que la pantalla se actualice.
+  const pedalDown = useRef(false)
+  const sustained = useRef(new Set<MidiNote>())
+  const [pedal, setPedal] = useState(false)
+  const [sustainedNotes, setSustainedNotes] = useState<ReadonlySet<MidiNote>>(new Set())
+
+  const updateSustained = (change: (notes: Set<MidiNote>) => void) => {
+    change(sustained.current)
+    setSustainedNotes(new Set(sustained.current))
+  }
+
   const noteOn = (midi: MidiNote, velocity?: number) => {
     playNote(midi, velocity)
+    // Si la nota seguía sonando por el pedal, ahora vuelve a estar pulsada.
+    if (sustained.current.has(midi)) updateSustained((notes) => notes.delete(midi))
     setActiveNotes((prev) => (prev.has(midi) ? prev : new Set(prev).add(midi)))
   }
 
   const noteOff = (midi: MidiNote) => {
-    stopNote(midi)
+    if (pedalDown.current) updateSustained((notes) => notes.add(midi))
+    else stopNote(midi)
     setActiveNotes((prev) => {
       if (!prev.has(midi)) return prev
       const next = new Set(prev)
@@ -28,15 +44,31 @@ function App() {
     })
   }
 
-  const midi = useMidiInput(noteOn, noteOff)
+  const sustain = (down: boolean) => {
+    if (down === pedalDown.current) return
+    pedalDown.current = down
+    setPedal(down)
+    if (!down) {
+      sustained.current.forEach(stopNote)
+      updateSustained((notes) => notes.clear())
+    }
+  }
 
-  const playing = [...activeNotes].sort((a, b) => a - b)
-  const [chord, ...alternatives] = detectChords(activeNotes)
+  const midi = useMidiInput(noteOn, noteOff, sustain)
+
+  // Lo que suena ahora: teclas pulsadas más las que mantiene el pedal. Así el
+  // acorde se reconoce también si lo tocas arpegiado con el pedal pisado.
+  const sounding = new Set([...activeNotes, ...sustainedNotes])
+  const playing = [...sounding].sort((a, b) => a - b)
+  const [chord, ...alternatives] = detectChords(sounding)
 
   return (
     <main>
       <h1>MyPiano</h1>
-      <p className="midi-status">{midiStatusText(midi)}</p>
+      <p className="midi-status">
+        {midiStatusText(midi)}
+        <span className={`pedal${pedal ? ' down' : ''}`}>Pedal</span>
+      </p>
       <p>{loaded ? (playing.length ? playing.map(noteName).join(' · ') : '—') : 'Cargando sonido…'}</p>
       <div className="chord">
         {chord && (
